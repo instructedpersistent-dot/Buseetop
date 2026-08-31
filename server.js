@@ -157,6 +157,15 @@ app.post('/trips', requireAuth, requireRole('driver'), (req, res) => {
   res.json(db.prepare('SELECT * FROM trips WHERE id = ?').get(id));
 });
 
+// Driver's own trips, ALL statuses (scheduled/arrived/departed) — unlike the public
+// /trips search which only shows 'scheduled' trips still open for booking.
+app.get('/trips/mine', requireAuth, requireRole('driver'), (req, res) => {
+  const trips = db.prepare(`SELECT * FROM trips WHERE driver_id = ? ORDER BY departure_time DESC`).all(req.user.id);
+  trips.forEach(expireStaleBookings);
+  const fresh = db.prepare(`SELECT * FROM trips WHERE driver_id = ? ORDER BY departure_time DESC`).all(req.user.id);
+  res.json(fresh);
+});
+
 // List / search trips — homepage + "going to" search
 app.get('/trips', (req, res) => {
   const { destination } = req.query;
