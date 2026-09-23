@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL CHECK(role IN ('traveler','driver','admin')),
   license_number TEXT,
-  driver_verified INTEGER DEFAULT 0,       -- manual/off-app flag, admin flips this directly in DB or via /admin route
+  driver_verified INTEGER DEFAULT 0,       -- manual/off-app flag, admin flips this directly
   created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -91,6 +91,19 @@ CREATE TABLE IF NOT EXISTS location_shares (
   traveler_id TEXT REFERENCES users(id),
   trip_id TEXT,
   created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Bank transfers aren't instantly verifiable, so they sit here as 'pending' until
+-- the admin manually confirms the money actually arrived, then the wallet gets credited.
+CREATE TABLE IF NOT EXISTS deposit_requests (
+  id TEXT PRIMARY KEY,
+  user_id TEXT REFERENCES users(id),
+  amount INTEGER NOT NULL,      -- kobo
+  method TEXT NOT NULL,         -- 'bank_transfer'
+  reference TEXT,               -- whatever the user says they used as the transfer narration
+  status TEXT DEFAULT 'pending', -- pending | approved | rejected
+  created_at TEXT DEFAULT (datetime('now')),
+  resolved_at TEXT
 );
 `);
 
